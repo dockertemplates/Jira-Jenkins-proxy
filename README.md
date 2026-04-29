@@ -1,4 +1,7 @@
 # Jira → Jenkins proxy
+<img width="1118" height="769" alt="image" src="https://github.com/user-attachments/assets/075800ff-3413-4477-b2b0-3b4f9abf5d49" />
+
+
 Polls **Jira** with a **JQL** query, tracks processed issues in a **JSON** file, and **POSTs** ticket metadata to a **Jenkins Generic Webhook Trigger** URL when new issues appear. Includes a small **web UI** to edit JQL, webhook URL, and poll interval.
 | Path | Purpose |
 |------|--------|
