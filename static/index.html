@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jira → Jenkins Bridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-deep: #0a0c10;
+      --bg-panel: rgba(18, 22, 32, 0.72);
+      --bg-elevated: rgba(28, 34, 48, 0.9);
+      --border: rgba(120, 140, 180, 0.18);
+      --text: #e8ecf4;
+      --text-muted: #8b95a8;
+      --accent: #3ee8c8;
+      --accent-dim: rgba(62, 232, 200, 0.15);
+      --accent-2: #8b7cf7;
+      --danger: #f87171;
+      --radius: 14px;
+      --shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+      --font: "DM Sans", system-ui, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+
+    body {
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--bg-deep);
+      background-image:
+        radial-gradient(ellipse 120% 80% at 10% -20%, rgba(62, 232, 200, 0.12), transparent 50%),
+        radial-gradient(ellipse 90% 60% at 100% 0%, rgba(139, 124, 247, 0.14), transparent 45%),
+        radial-gradient(ellipse 70% 50% at 50% 100%, rgba(30, 80, 120, 0.2), transparent 55%);
+      background-attachment: fixed;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 3rem;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .brand h1 {
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0;
+      background: linear-gradient(120deg, var(--text) 0%, var(--accent) 55%, var(--accent-2) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(62, 232, 200, 0.35);
+    }
+
+    .grid {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 880px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+
+    .card {
+      background: var(--bg-panel);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.35rem 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card h2 {
+      margin: 0 0 1rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card h2 span.icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent-dim), rgba(139, 124, 247, 0.2));
+      display: grid;
+      place-items: center;
+      font-size: 0.85rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 0.45rem;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      padding: 0.75rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    input:focus, textarea:focus {
+      border-color: rgba(62, 232, 200, 0.45);
+      box-shadow: 0 0 0 3px rgba(62, 232, 200, 0.12);
+    }
+
+    .field { margin-bottom: 1rem; }
+    .field:last-of-type { margin-bottom: 0; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 1.15rem;
+    }
+
+    button {
+      font-family: var(--font);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.12s, opacity 0.12s;
+    }
+
+    button:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2dd4bf, #14b8a6);
+      color: #042f2e;
+      box-shadow: 0 4px 20px rgba(45, 212, 191, 0.35);
+    }
+
+    .btn-primary:hover { opacity: 0.95; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      border-color: rgba(120, 140, 180, 0.35);
+    }
+
+    .btn-danger {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+    }
+
+    .btn-sm {
+      padding: 0.35rem 0.65rem;
+      font-size: 0.78rem;
+      border-radius: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      max-width: min(420px, calc(100vw - 2rem));
+      padding: 0.85rem 1.1rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      z-index: 100;
+      animation: slide 0.25s ease;
+    }
+
+    @keyframes slide {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .toast.ok { background: rgba(20, 184, 166, 0.95); color: #042f2e; }
+    .toast.err { background: rgba(127, 29, 29, 0.95); color: #fecaca; }
+
+    .meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.75rem;
+      font-family: var(--mono);
+      word-break: break-all;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.6rem 0.5rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0.75rem 0.5rem;
+      border-bottom: 1px solid rgba(120, 140, 180, 0.08);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+    }
+
+    tr:hover td { background: rgba(62, 232, 200, 0.04); }
+
+    .empty {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 2rem 1rem;
+      font-size: 0.95rem;
+    }
+
+    .token-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .token-row input { flex: 1; min-width: 200px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Jira → Jenkins Bridge</h1>
+        <p>Configure JQL and your Jenkins generic webhook; processed tickets are tracked in JSON on disk.</p>
+      </div>
+      <span class="pill" id="statusPill">Loading…</span>
+    </header>
+
+    <div class="grid grid-2">
+      <section class="card">
+        <h2><span class="icon">◇</span> JQL search</h2>
+        <div class="field">
+          <label for="jql">Jira Query Language</label>
+          <textarea id="jql" placeholder='assignee = currentUser() AND status = "Open"'></textarea>
+        </div>
+        <div class="field">
+          <label for="poll">Poll interval (seconds)</label>
+          <input type="number" id="poll" min="5" step="1" />
+        </div>
+        <div class="actions">
+          <button type="button" class="btn-primary" id="saveConfig">Save configuration</button>
+          <button type="button" class="btn-ghost" id="reloadConfig">Reload</button>
+        </div>
+        <p class="meta" id="metaPath"></p>
+      </section>
+
+      <section class="card">
+        <h2><span class="icon">↗</span> Jenkins webhook</h2>
+        <div class="field">
+          <label for="webhook">Generic Webhook Trigger URL</label>
+          <input type="text" id="webhook" placeholder="https://jenkins.example.com/generic-webhook-trigger/invoke?token=…" autocomplete="off" />
+        </div>
+        <p class="meta" id="metaJira"></p>
+        <div class="field" id="tokenBlock" style="display:none;margin-top:1rem;">
+          <label for="apiToken">API token (Bearer) for saves / deletes</label>
+          <div class="token-row">
+            <input type="password" id="apiToken" placeholder="Set in server API_TOKEN env" autocomplete="off" />
+            <button type="button" class="btn-ghost" id="rememberToken">Remember</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:1.25rem;">
+      <h2><span class="icon">✓</span> Processed issues</h2>
+      <div id="tableWrap">
+        <div class="empty">No processed issues yet.</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function toast(msg, ok) {
+      const el = document.createElement("div");
+      el.className = "toast " + (ok ? "ok" : "err");
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4500);
+    }
+
+    function authHeaders() {
+      const t = $("apiToken").value.trim();
+      const h = { "Content-Type": "application/json" };
+      if (t) h["Authorization"] = "Bearer " + t;
+      return h;
+    }
+
+    async function loadConfig() {
+      const r = await fetch("/api/config");
+      if (!r.ok) throw new Error("Failed to load config");
+      const c = await r.json();
+      $("jql").value = c.jql || "";
+      $("webhook").value = c.jenkins_webhook_url || "";
+      $("poll").value = c.poll_interval_seconds || 30;
+      $("metaPath").textContent = "Store: " + c.data_path;
+      $("metaJira").textContent = "Jira host: " + (c.jira_url_masked || "—");
+      $("tokenBlock").style.display = c.write_auth_required ? "block" : "none";
+      const saved = localStorage.getItem("jjp_api_token");
+      if (saved && !$("apiToken").value) $("apiToken").value = saved;
+      $("statusPill").textContent = "Connected";
+    }
+
+    async function loadProcessed() {
+      const r = await fetch("/api/processed");
+      if (!r.ok) return;
+      const data = await r.json();
+      const items = data.items || [];
+      const wrap = $("tableWrap");
+      if (!items.length) {
+        wrap.innerHTML = '<div class="empty">No processed issues yet. New Jira keys from your JQL will appear here after a successful Jenkins webhook.</div>';
+        return;
+      }
+      wrap.innerHTML = `
+        <table>
+          <thead><tr><th>Issue</th><th>Processed at (UTC)</th><th></th></tr></thead>
+          <tbody>
+            ${items.map((row) => `
+              <tr>
+                <td>${escapeHtml(row.issue_key)}</td>
+                <td>${escapeHtml(row.processed_at)}</td>
+                <td><button type="button" class="btn-danger btn-sm" data-key="${escapeAttr(row.issue_key)}">Remove</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>`;
+      wrap.querySelectorAll("button[data-key]").forEach((btn) => {
+        btn.addEventListener("click", () => removeProcessed(btn.getAttribute("data-key")));
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+    function escapeAttr(s) {
+      return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;");
+    }
+
+    async function saveConfig() {
+      const body = {
+        jql: $("jql").value,
+        jenkins_webhook_url: $("webhook").value,
+        poll_interval_seconds: parseInt($("poll").value, 10) || 30,
+      };
+      const r = await fetch("/api/config", {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      if (r.status === 401) {
+        toast("Unauthorized — set API token if server requires it.", false);
+        $("tokenBlock").style.display = "block";
+        return;
+      }
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        toast(err.detail || "Save failed", false);
+        return;
+      }
+      toast("Configuration saved.", true);
+      await loadConfig();
+    }
+
+    async function removeProcessed(key) {
+      if (!confirm("Remove " + key + " from the store? The next poll may trigger Jenkins again if the issue still matches JQL.")) return;
+      const r = await fetch("/api/processed/" + encodeURIComponent(key), {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      if (r.status === 401) {
+        toast("Unauthorized — API token required.", false);
+        return;
+      }
+      if (!r.ok) {
+        toast("Remove failed", false);
+        return;
+      }
+      toast("Removed " + key, true);
+      await loadProcessed();
+    }
+
+    $("saveConfig").addEventListener("click", () => saveConfig().catch((e) => toast(String(e.message || e), false)));
+    $("reloadConfig").addEventListener("click", () => {
+      loadConfig().then(loadProcessed).catch((e) => toast(String(e.message || e), false));
+    });
+    $("rememberToken").addEventListener("click", () => {
+      const t = $("apiToken").value.trim();
+      if (t) localStorage.setItem("jjp_api_token", t);
+      toast(t ? "Token saved in this browser." : "Cleared.", true);
+      if (!t) localStorage.removeItem("jjp_api_token");
+    });
+
+    loadConfig()
+      .then(loadProcessed)
+      .catch((e) => {
+        $("statusPill").textContent = "Error";
+        toast(String(e.message || e), false);
+      });
+
+    setInterval(() => loadProcessed().catch(() => {}), 15000);
+  </script>
+</body>
+</html>
